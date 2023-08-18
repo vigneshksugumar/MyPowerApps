@@ -1,0 +1,117 @@
+    Set(varFormula ,"{
+	""requests"": [{
+		""entityTypes"": [
+			""listItem""
+		],
+		""query"": {
+			""queryString"": ""*"& txtSearch.Text &"* path:\""https://thepoweraddicts.sharepoint.com/sites/RDTech/Lists/Work%20progress%20tracker\""""
+		},
+		""sortProperties"": [{
+			""name"": ""createdDateTime"",
+			""isDescending"": ""true""
+		}],
+		""size"": "&drpPaginationSize.Selected.Value&",
+        ""from"":"&varFrom &",
+		""fields"": [
+			""title"",
+			""ListItemId"",
+			""ListID"",
+			""Filename"",
+			""WebUrl"",
+			""SiteID"",
+			""WebId"",
+			""Author"",
+			""LastModifiedTime"",
+            ""progress"",""AssignedTo"",""Priority"",""Department""
+		]
+	}]
+}");
+Set(varBinary , "data:text/plain;base64," & With({
+    InputText:varFormula,
+    AsciiTable:AddColumns(Sequence(256,1),"char",Char(Value)),
+    B64ToBin:
+    Table(
+        {b64:"A",bin:"000000"},
+        {b64:"B",bin:"000001"},
+        {b64:"C",bin:"000010"},
+        {b64:"D",bin:"000011"},
+        {b64:"E",bin:"000100"},
+        {b64:"F",bin:"000101"},
+        {b64:"G",bin:"000110"},
+        {b64:"H",bin:"000111"},
+        {b64:"I",bin:"001000"},
+        {b64:"J",bin:"001001"},
+        {b64:"K",bin:"001010"},
+        {b64:"L",bin:"001011"},
+        {b64:"M",bin:"001100"},
+        {b64:"N",bin:"001101"},
+        {b64:"O",bin:"001110"},
+        {b64:"P",bin:"001111"},
+        {b64:"Q",bin:"010000"},
+        {b64:"R",bin:"010001"},
+        {b64:"S",bin:"010010"},
+        {b64:"T",bin:"010011"},
+        {b64:"U",bin:"010100"},
+        {b64:"V",bin:"010101"},
+        {b64:"W",bin:"010110"},
+        {b64:"X",bin:"010111"},
+        {b64:"Y",bin:"011000"},
+        {b64:"Z",bin:"011001"},
+        {b64:"a",bin:"011010"},
+        {b64:"b",bin:"011011"},
+        {b64:"c",bin:"011100"},
+        {b64:"d",bin:"011101"},
+        {b64:"e",bin:"011110"},
+        {b64:"f",bin:"011111"},
+        {b64:"g",bin:"100000"},
+        {b64:"h",bin:"100001"},
+        {b64:"i",bin:"100010"},
+        {b64:"j",bin:"100011"},
+        {b64:"k",bin:"100100"},
+        {b64:"l",bin:"100101"},
+        {b64:"m",bin:"100110"},
+        {b64:"n",bin:"100111"},
+        {b64:"o",bin:"101000"},
+        {b64:"p",bin:"101001"},
+        {b64:"q",bin:"101010"},
+        {b64:"r",bin:"101011"},
+        {b64:"s",bin:"101100"},
+        {b64:"t",bin:"101101"},
+        {b64:"u",bin:"101110"},
+        {b64:"v",bin:"101111"},
+        {b64:"w",bin:"110000"},
+        {b64:"x",bin:"110001"},
+        {b64:"y",bin:"110010"},
+        {b64:"z",bin:"110011"},
+        {b64:"0",bin:"110100"},
+        {b64:"1",bin:"110101"},
+        {b64:"2",bin:"110110"},
+        {b64:"3",bin:"110111"},
+        {b64:"4",bin:"111000"},
+        {b64:"5",bin:"111001"},
+        {b64:"6",bin:"111010"},
+        {b64:"7",bin:"111011"},
+        {b64:"8",bin:"111100"},
+        {b64:"9",bin:"111101"},
+        {b64:"+",bin:"111110"},
+        {b64:"/",bin:"111111"}
+    )},
+    With({
+    BinRep:
+    Concat(
+        AddColumns(ForAll(Split(InputText,""), {Result: ThisRecord.Value}),"dec",LookUp(AsciiTable,char=Result).Value),//Convert text to Ascii character code (decimal)
+        Concat(Sequence(8,8,-1),Text(If(And(Mod(dec,Power(2,Value))>=Power(2,Value-1),Mod(dec,Power(2,Value))<Power(2,Value)),1,0)))&"","")//Convert decimal to binary
+    },
+        With({b64string:Concat(
+            Sequence(
+                RoundUp(Len(BinRep)/6,0),0),
+                LookUp(
+                    B64ToBin,
+                    bin=Mid(BinRep&Left("000000",6-Mod(Len(BinRep),6)),6*Value+1,6) //Left("000000"....) is padding right with zero
+                ).b64&"", 
+                ""
+            )},
+            b64string&Left("====",Mod(4-Mod(Len(b64string),4),4))//Convert binary to base64
+        )
+    )
+));Set(searchResult,Office365Groups.HttpRequest("https://graph.microsoft.com/v1.0/search/query","POST",varBinary));
